@@ -1,37 +1,14 @@
 //
-//  ContentView.swift
-//  ScrollViewController
+//  YJScrollContentView.swift
+//  CloudPlatform
 //
-//  Created by jasnig on 16/4/13.
-//  Copyright © 2016年 ZeroJ. All rights reserved.
-// github: https://github.com/jasnig
-// 简书: http://www.jianshu.com/users/fb31a3d1ec30/latest_articles
-
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-
+//  Created by o dream boy on 2018/3/28.
+//  Copyright © 2018年 冯垚杰. All rights reserved.
 //
 
 import UIKit
 
-
-public class ContentView: UIView {
+public class YJScrollContentView: UIView {
     static let cellId = "cellId"
     
     /// 所有的子控制器
@@ -45,7 +22,7 @@ public class ContentView: UIView {
     
     // 这里使用weak 避免循环引用
     private weak var parentViewController: UIViewController?
-    public weak var delegate: ContentViewDelegate?
+    public weak var delegate: YJScrollContentViewDelegate?
     
     private(set) lazy var collectionView: UICollectionView = {[weak self] in
         let flowLayout = UICollectionViewFlowLayout()
@@ -69,24 +46,24 @@ public class ContentView: UIView {
             collection.delegate = strongSelf
             collection.dataSource = strongSelf
             
-            collection.register(UICollectionViewCell.self, forCellWithReuseIdentifier: ContentView.cellId)
+            collection.register(UICollectionViewCell.self, forCellWithReuseIdentifier: YJScrollContentView.cellId)
             
         }
         return collection
-    }()
+        }()
     
-//MARK:- life cycle
+    //MARK:- life cycle
     public init(frame:CGRect, childVcs:[UIViewController], parentViewController: UIViewController) {
         self.parentViewController = parentViewController
         self.childVcs = childVcs
         super.init(frame: frame)
         commonInit()
         
-
+        
     }
     
     required public init?(coder aDecoder: NSCoder) {
-        fatalError("不要使用storyboard中的view为contentView")
+        fatalError("不要使用storyboard中的view为YJScrollContentView")
     }
     
     
@@ -127,18 +104,17 @@ public class ContentView: UIView {
     override public func layoutSubviews() {
         super.layoutSubviews()
         collectionView.frame = bounds
-
+        
     }
     
     deinit {
         parentViewController = nil
-        print("\(self.debugDescription) --- 销毁")
     }
-
+    
 }
 
 //MARK: - public helper
-extension ContentView {
+extension YJScrollContentView {
     
     // 给外界可以设置ContentOffSet的方法(public method to set contentOffSet)
     public func setContentOffSet(offSet: CGPoint , animated: Bool) {
@@ -147,7 +123,7 @@ extension ContentView {
         //这里开始滚动
         delegate?.contentViewDidBeginMove(scrollView: collectionView)
         self.collectionView.setContentOffset(offSet, animated: animated)
-
+        
     }
     
     // 给外界刷新视图的方法(public method to reset childVcs)
@@ -171,7 +147,7 @@ extension ContentView {
             }
             // add childVc
             parentViewController?.addChildViewController(childVc)
-
+            
         }
         
         // refreshing
@@ -183,14 +159,14 @@ extension ContentView {
 
 
 //MARK:- UICollectionViewDelegate, UICollectionViewDataSource
-extension ContentView: UICollectionViewDelegate, UICollectionViewDataSource {
+extension YJScrollContentView: UICollectionViewDelegate, UICollectionViewDataSource {
     
     final public func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return childVcs.count
     }
     
     final public func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: ContentView.cellId, for: indexPath)
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: YJScrollContentView.cellId, for: indexPath)
         // 避免出现重用显示内容出错 ---- 也可以直接给每个cell用不同的reuseIdentifier实现
         // avoid to the case that shows the wrong thing due to the collectionViewCell's reuse
         for subview in cell.contentView.subviews {
@@ -207,27 +183,27 @@ extension ContentView: UICollectionViewDelegate, UICollectionViewDataSource {
         addCurrentShowIndexNotification(index: indexPath.row)
         return cell
     }
- 
+    
 }
 
 
 // MARK: - UIScrollViewDelegate
-extension ContentView: UIScrollViewDelegate {
+extension YJScrollContentView: UIScrollViewDelegate {
     // update UI
     final public func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
         let currentIndex = Int(floor(scrollView.contentOffset.x / bounds.size.width))
-//        print("减速完成")
-//        if self.currentIndex == currentIndex {// finish scrolling to next page
-//
-//            addCurrentShowIndexNotification(currentIndex)
-//
-//        }
+        //        print("减速完成")
+        //        if self.currentIndex == currentIndex {// finish scrolling to next page
+        //
+        //            addCurrentShowIndexNotification(currentIndex)
+        //
+        //        }
         delegate?.contentViewDidEndDisPlay(scrollView: collectionView)
         // 保证如果滚动没有到下一页就返回了上一页
         // 通过这种方式再次正确设置 index(still at oldPage )
         delegate?.contentViewDidEndMoveToIndex(fromIndex: self.currentIndex, toIndex: currentIndex)
-
-
+        
+        
     }
     
     // 代码调整contentOffSet但是没有动画的时候不会调用这个
@@ -237,7 +213,7 @@ extension ContentView: UIScrollViewDelegate {
     
     final public func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
         let currentIndex = Int(floor(scrollView.contentOffset.x / bounds.size.width))
-
+        
         delegate?.contentViewDidEndDrag(scrollView: scrollView)
         print(scrollView.contentOffset.x)
         //快速滚动的时候第一页和最后一页(scroll too fast will not call 'scrollViewDidEndDecelerating')
@@ -253,7 +229,7 @@ extension ContentView: UIScrollViewDelegate {
         /// 用来判断方向
         oldOffSetX = scrollView.contentOffset.x
         delegate?.contentViewDidBeginMove(scrollView: collectionView)
-
+        
         forbidTouchToAdjustPosition = false
     }
     
@@ -287,19 +263,12 @@ extension ContentView: UIScrollViewDelegate {
             
         }
         
-        //        print("\(progress)------\(oldIndex)----\(currentIndex)")
-        
         delegate?.contentViewMoveToIndex(fromIndex: oldIndex, toIndex: currentIndex, progress: progress)
-        
-        
-        
     }
-
-    
 }
 
 // MARK: - UIGestureRecognizerDelegate
-extension ContentView: UIGestureRecognizerDelegate {
+extension YJScrollContentView: UIGestureRecognizerDelegate {
     public override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         // handle the navigationController's pop gesture
         if let naviParentViewController = self.parentViewController?.parent as? UINavigationController, naviParentViewController.visibleViewController == parentViewController { // 当显示的是ScrollPageView的时候 只在第一个tag处执行pop手势
@@ -309,7 +278,7 @@ extension ContentView: UIGestureRecognizerDelegate {
     }
 }
 
-public protocol ContentViewDelegate: class {
+public protocol YJScrollContentViewDelegate: class {
     /// 有默认实现, 不推荐重写(override is not recommoned)
     func contentViewMoveToIndex(fromIndex: Int, toIndex: Int, progress: CGFloat)
     /// 有默认实现, 不推荐重写(override is not recommoned)
@@ -322,11 +291,11 @@ public protocol ContentViewDelegate: class {
     
     func contentViewDidEndDrag(scrollView: UIScrollView)
     /// 必须提供的属性
-    var segmentView: ScrollSegmentView { get }
+    var segmentView: YJScrollSegmentView { get }
 }
 
 // 由于每个遵守这个协议的都需要执行些相同的操作, 所以直接使用协议扩展统一完成,协议遵守者只需要提供segmentView即可
-extension ContentViewDelegate {
+extension YJScrollContentViewDelegate {
     public func contentViewDidEndDrag(scrollView: UIScrollView) {
         
     }
@@ -352,4 +321,3 @@ extension ContentViewDelegate {
         segmentView.adjustUIWithProgress(progress: progress, oldIndex: fromIndex, currentIndex: toIndex)
     }
 }
-
